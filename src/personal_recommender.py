@@ -218,13 +218,15 @@ class PersonalRecommender:
         if len(self.liked) == 0:
             if 'vote_count' in self.df.columns:
                 top = self.df.sort_values('vote_count', ascending=False).head(k)
-                return top[['title']].reset_index(drop=True)
+                return top[['title']]
             return self.df[['title']].head(k)
         sims = linear_kernel(self.profile, self.matrix).flatten()
         for idx in self.liked:
             sims[idx] = -1
         top_idx = sims.argsort()[::-1][:k]
-        return self.df.iloc[top_idx][['title']].assign(score=sims[top_idx]).reset_index(drop=True)
+        # Keep the original DataFrame index so callers can map rows back to
+        # their real movie ids (do NOT reset_index here).
+        return self.df.iloc[top_idx][['title']].assign(score=sims[top_idx])
 
 if __name__ == '__main__':
     df = load_movie_df()

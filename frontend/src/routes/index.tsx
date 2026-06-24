@@ -482,7 +482,7 @@ function MovieCard({
         <MoviePoster title={movie.title} year={movie.year} size="sm" />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <h3 className="font-semibold truncate">{movie.title}</h3>
+            <h3 className="font-semibold break-words">{movie.title}</h3>
             {movie.year && (
               <span className="text-xs text-muted-foreground shrink-0">
                 {movie.year}
@@ -490,7 +490,7 @@ function MovieCard({
             )}
           </div>
           {movie.short && (
-            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+            <p className="mt-1 text-xs text-muted-foreground break-words">
               {movie.short}
             </p>
           )}
