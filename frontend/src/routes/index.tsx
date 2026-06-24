@@ -23,7 +23,12 @@ import {
   type Recommendation,
 } from "@/lib/api/movies";
 import { MoviePoster } from "@/components/movie-poster";
-import { FilterBar, type Decade, type SortBy } from "@/components/filter-bar";
+import {
+  FilterBar,
+  type SortBy,
+  type RuntimeBucket,
+  type MinRating,
+} from "@/components/filter-bar";
 import { FavoritesPanel } from "@/components/favorites-panel";
 import { useFavorites } from "@/hooks/use-favorites";
 
@@ -46,10 +51,20 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-function inDecade(year: number | null | undefined, decade: Decade) {
-  if (decade === "all" || !year) return true;
-  const start = parseInt(decade);
-  return year >= start && year < start + 10;
+function hasGenre(genres: string | null | undefined, selectedGenres: string[]) {
+  if (!selectedGenres.length || !genres) return true;
+  const genreList = genres.split(",").map((g) => g.trim());
+  return selectedGenres.some((selected) =>
+    genreList.some((g) => g.toLowerCase() === selected.toLowerCase())
+  );
+}
+
+function inRuntime(runtime: number | null | undefined, bucket: RuntimeBucket) {
+  if (bucket === "all" || runtime == null) return bucket === "all";
+  if (bucket === "short") return runtime < 90;
+  if (bucket === "medium") return runtime >= 90 && runtime <= 120;
+  if (bucket === "long") return runtime > 120 && runtime <= 150;
+  return runtime > 150; // epic
 }
 
 function Index() {
@@ -59,9 +74,12 @@ function Index() {
 
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<number[]>([]);
-  const [decade, setDecade] = useState<Decade>("all");
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [minRating, setMinRating] = useState<MinRating>("all");
+  const [certificate, setCertificate] = useState<string>("all");
+  const [runtime, setRuntime] = useState<RuntimeBucket>("all");
+  const [director, setDirector] = useState<string>("");
   const [sortBy, setSortBy] = useState<SortBy>("title");
-  const [minScore, setMinScore] = useState(0);
 
   const fav = useFavorites();
 
@@ -72,33 +90,77 @@ function Index() {
     retry: 1,
   });
 
+  // Extract unique genres from all movies
+  const availableGenres = useMemo(() => {
+    const genreSet = new Set<string>();
+    movies.forEach((m) => {
+      if (m.genres) {
+        m.genres.split(",").forEach((g) => {
+          genreSet.add(g.trim());
+        });
+      }
+    });
+    return Array.from(genreSet).sort();
+  }, [movies]);
+
+  // Extract unique certificates from all movies
+  const availableCertificates = useMemo(() => {
+    const set = new Set<string>();
+    movies.forEach((m) => {
+      if (m.certificate) set.add(m.certificate);
+    });
+    return Array.from(set).sort();
+  }, [movies]);
+
+  // Extract unique directors from all movies
+  const availableDirectors = useMemo(() => {
+    const set = new Set<string>();
+    movies.forEach((m) => {
+      if (m.director) set.add(m.director);
+    });
+    return Array.from(set).sort();
+  }, [movies]);
+
   const recMutation = useMutation({
     mutationFn: () => fetchRecommendations(selected, 8),
   });
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const minR = minRating === "all" ? 0 : parseFloat(minRating);
     const list = movies.filter(
-      (m) => (!q || m.title.toLowerCase().includes(q)) && inDecade(m.year, decade),
+      (m) =>
+        (!q || m.title.toLowerCase().includes(q)) &&
+        hasGenre(m.genres, selectedGenres) &&
+        (minRating === "all" || (m.rating ?? 0) >= minR) &&
+        (certificate === "all" || m.certificate === certificate) &&
+        inRuntime(m.runtime, runtime) &&
+        (!director.trim() ||
+          (m.director ?? "").toLowerCase().includes(director.trim().toLowerCase()))
     );
     return [...list].sort((a, b) => {
-      if (sortBy === "title") return a.title.localeCompare(b.title);
-      const ay = a.year ?? 0;
-      const by = b.year ?? 0;
-      return sortBy === "year-desc" ? by - ay : ay - by;
+      if (sortBy === "rating-desc") return (b.rating ?? 0) - (a.rating ?? 0);
+      if (sortBy === "votes-desc") return (b.votes ?? 0) - (a.votes ?? 0);
+      return a.title.localeCompare(b.title);
     });
-  }, [movies, search, decade, sortBy]);
+  }, [movies, search, selectedGenres, minRating, certificate, runtime, director, sortBy]);
 
   const filteredRecs = useMemo(() => {
     if (!recMutation.data) return [];
-    return recMutation.data.filter((r) => r.score * 100 >= minScore);
-  }, [recMutation.data, minScore]);
+    return recMutation.data;
+  }, [recMutation.data]);
 
   const toggle = (id: number) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   const selectedMovies = movies.filter((m) => selected.includes(m.id));
-  const hasActiveFilters = decade !== "all" || sortBy !== "title" || minScore > 0;
+  const hasActiveFilters =
+    selectedGenres.length > 0 ||
+    minRating !== "all" ||
+    certificate !== "all" ||
+    runtime !== "all" ||
+    director.trim() !== "" ||
+    sortBy !== "title";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -134,17 +196,29 @@ function Index() {
 
       <main className="mx-auto max-w-[1400px] px-6 py-8">
         <FilterBar
-          decade={decade}
-          onDecadeChange={setDecade}
+          selectedGenres={selectedGenres}
+          onGenresChange={setSelectedGenres}
+          availableGenres={availableGenres}
+          minRating={minRating}
+          onMinRatingChange={setMinRating}
+          certificate={certificate}
+          onCertificateChange={setCertificate}
+          availableCertificates={availableCertificates}
+          runtime={runtime}
+          onRuntimeChange={setRuntime}
+          director={director}
+          onDirectorChange={setDirector}
+          availableDirectors={availableDirectors}
           sortBy={sortBy}
           onSortChange={setSortBy}
-          minScore={minScore}
-          onMinScoreChange={setMinScore}
           hasActive={hasActiveFilters}
           onReset={() => {
-            setDecade("all");
+            setSelectedGenres([]);
+            setMinRating("all");
+            setCertificate("all");
+            setRuntime("all");
+            setDirector("");
             setSortBy("title");
-            setMinScore(0);
           }}
         />
 
@@ -276,7 +350,6 @@ function Index() {
               {recMutation.data && (
                 <Badge variant="secondary">
                   {filteredRecs.length}
-                  {minScore > 0 ? ` / ${recMutation.data.length}` : ""}
                 </Badge>
               )}
             </div>
@@ -329,7 +402,7 @@ function Index() {
                 <div className="text-center text-sm text-muted-foreground p-8">
                   {recMutation.data.length === 0
                     ? "No recommendations found. Try selecting different movies."
-                    : `No matches above ${minScore}% — lower the min match filter.`}
+                    : "No recommendations available."}
                 </div>
               )}
             </div>
