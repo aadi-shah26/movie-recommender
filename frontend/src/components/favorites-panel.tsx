@@ -156,7 +156,7 @@ export function FavoritesPanel({
               className="rounded-2xl border border-border/60 bg-secondary/30 hover:bg-secondary/50 p-3 transition-colors animate-in fade-in slide-in-from-right-2"
             >
               <div className="flex gap-3">
-                <MoviePoster title={movie.title} year={movie.year} size="md" />
+                <MoviePoster title={movie.title} year={movie.year} posterUrl={movie.poster_url} size="md" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start gap-2">
                     <div className="min-w-0 flex-1">

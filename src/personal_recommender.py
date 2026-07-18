@@ -6,6 +6,7 @@ import numpy as np
 import difflib
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.metrics.pairwise import linear_kernel
+from sklearn.preprocessing import normalize
 from scipy.sparse import hstack, csr_matrix
 
 #All the logic for recommending movies
@@ -14,6 +15,20 @@ DATA_DIR = Path('data')
 
 def _normalize_col_name(s: str) -> str:
     return re.sub(r'[^a-z0-9]', '', str(s).lower().strip())
+
+
+def _name_tokenizer(s):
+    """Tokenize a names field into whole-name tokens.
+
+    Splits on '|' and ',' so multi-name fields break apart, but a single
+    name like "Christopher Nolan" stays one token (lowercased). Used for both
+    the director and actor vectorizers so two different people who merely share
+    a first/last name don't spuriously match.
+    """
+    if not s:
+        return []
+    parts = re.split(r'[|,]', str(s))
+    return [p.strip().lower() for p in parts if p.strip()]
 
 def load_movie_df():
     csv = next(DATA_DIR.rglob('*.csv'))
@@ -59,7 +74,7 @@ def load_movie_df():
 
     # actors column
     actor_col = None
-    for candidate in ('actors','cast','starring','castandcrew'):
+    for candidate in ('actors','cast','starring','castandcrew','stars'):
         if _normalize_col_name(candidate) in cols:
             actor_col = cols[_normalize_col_name(candidate)]
             break
@@ -70,6 +85,17 @@ def load_movie_df():
         if _normalize_col_name(candidate) in cols:
             year_col = cols[_normalize_col_name(candidate)]
             break
+
+    # numeric quality columns (rating / votes / metascore)
+    def _find_col(candidates):
+        for candidate in candidates:
+            if _normalize_col_name(candidate) in cols:
+                return cols[_normalize_col_name(candidate)]
+        return None
+
+    rating_col = _find_col(('imdbrating', 'rating', 'imdb_rating', 'averagerating'))
+    votes_col = _find_col(('votes', 'numvotes', 'votecount', 'vote_count'))
+    metascore_col = _find_col(('metascore', 'metacritic'))
 
     # rename title to 'title'
     df = df.rename(columns={title_col: 'title'})
@@ -119,16 +145,32 @@ def load_movie_df():
         return int(m.group(0)) if m else np.nan
     df['year'] = df[year_col].apply(_extract_year) if year_col else np.nan
 
+    # numeric quality signals, coerced to numbers (strip stray non-numeric chars
+    # like thousands separators from vote counts)
+    def _to_numeric(col):
+        if not col:
+            return np.nan
+        cleaned = df[col].astype(str).str.replace(r'[^0-9.\-]', '', regex=True)
+        return pd.to_numeric(cleaned, errors='coerce')
+
+    df['rating'] = _to_numeric(rating_col)
+    df['votes'] = _to_numeric(votes_col)
+    df['metascore'] = _to_numeric(metascore_col)
+
     return df.reset_index(drop=True)
 
 class PersonalRecommender:
-    def __init__(self, df=None, weights=None):
+    def __init__(self, df=None, weights=None, normalize_features=True):
         self.df = df if df is not None else load_movie_df()
+        self.normalize_features = normalize_features
 
-        # feature weights
-        w = {'text': 1.0, 'genre': 6.0, 'director': 3.0, 'actors': 4.0, 'year': 2.0}
+        # feature weights. 'quality' is the blend weight for the popularity/
+        # rating prior applied at ranking time (not a feature block).
+        w = {'text': 1.0, 'genre': 6.0, 'director': 3.0, 'actors': 4.0,
+             'year': 2.0, 'quality': 0.15}
         if weights:
             w.update(weights)
+        self.quality_weight = float(w['quality'])
 
         # text TF-IDF
         self.tfidf = TfidfVectorizer(stop_words='english', max_features=20000)
@@ -142,45 +184,61 @@ class PersonalRecommender:
         else:
             genre_mat = csr_matrix((len(self.df), 0))
 
-        # director as bag-of-words
+        # director: whole-name tokens (so "Christopher Nolan" is one token, not
+        # two words that collide with other directors named Christopher).
         director_series = self.df['director'].astype(str).fillna('').str.strip()
         if director_series.str.len().gt(0).any():
-            self.dir_vec = CountVectorizer(lowercase=True)
+            self.dir_vec = CountVectorizer(tokenizer=_name_tokenizer, token_pattern=None, lowercase=False)
             director_mat = self.dir_vec.fit_transform(director_series)
         else:
             director_mat = csr_matrix((len(self.df), 0))
 
-        # actors: use custom tokenizer that splits on '|'
-        def _actor_tokenizer(s):
-            if not s:
-                return []
-            return [t.strip().lower() for t in s.split('|') if t.strip()]
-
+        # actors: whole-name tokens (already pipe-joined in load_movie_df)
         actors_series = self.df['actors'].astype(str).fillna('').str.strip()
         if actors_series.str.len().gt(0).any():
-            self.actor_vec = CountVectorizer(tokenizer=_actor_tokenizer, lowercase=True)
+            self.actor_vec = CountVectorizer(tokenizer=_name_tokenizer, token_pattern=None, lowercase=False)
             actor_mat = self.actor_vec.fit_transform(actors_series)
         else:
             actor_mat = csr_matrix((len(self.df), 0))
 
-        # year numeric scaled into [0,1]
-        years = self.df['year'].fillna(self.df['year'].median() if not self.df['year'].isnull().all() else 0)
-        ymin, ymax = years.min(), years.max()
+        # year numeric scaled into [0,1] -- only when a usable year exists,
+        # otherwise emit a 0-column block so the dead feature contributes nothing
+        if self.df['year'].notna().any():
+            years = self.df['year'].fillna(self.df['year'].median())
+            ymin, ymax = years.min(), years.max()
+        else:
+            ymin = ymax = 0
         if ymax - ymin == 0:
-            year_scaled = np.zeros((len(self.df), 1), dtype=float)
+            year_mat = csr_matrix((len(self.df), 0))
         else:
             year_scaled = ((years - ymin) / (ymax - ymin)).astype(float).values.reshape(-1, 1)
-        year_mat = csr_matrix(year_scaled)
+            year_mat = csr_matrix(year_scaled)
 
-        # scale by weights
-        text_mat = text_mat.multiply(w['text'])
-        genre_mat = genre_mat.multiply(w['genre'])
-        director_mat = director_mat.multiply(w['director'])
-        actor_mat = actor_mat.multiply(w['actors'])
-        year_mat = year_mat.multiply(w['year'])
+        # per-block L2 normalization (so weights mean relative importance rather
+        # than being swamped by token counts / vector length), then weight.
+        blocks = [
+            (text_mat, w['text']),
+            (genre_mat, w['genre']),
+            (director_mat, w['director']),
+            (actor_mat, w['actors']),
+            (year_mat, w['year']),
+        ]
+        scaled = []
+        for block, weight in blocks:
+            if block.shape[1] == 0:
+                scaled.append(block)
+                continue
+            if self.normalize_features:
+                block = normalize(block, norm='l2', axis=1)
+            scaled.append(block.multiply(weight))
 
-        # final item matrix (sparse)
-        self.matrix = hstack([text_mat, genre_mat, director_mat, actor_mat, year_mat], format='csr')
+        # final item matrix (sparse); L2-normalize rows so linear_kernel == cosine
+        self.matrix = hstack(scaled, format='csr')
+        if self.normalize_features:
+            self.matrix = normalize(self.matrix, norm='l2', axis=1)
+
+        # quality/popularity prior in [0,1] from rating + log(votes)
+        self.quality = self._build_quality()
 
         # normalized title -> index map
         def _norm(s):
@@ -188,6 +246,27 @@ class PersonalRecommender:
         self.title_to_idx = {_norm(t): i for i, t in enumerate(self.df['title'].astype(str))}
         self.liked = []
         self.profile = np.zeros((1, self.matrix.shape[1]), dtype=float)
+
+    def _build_quality(self):
+        """Combine normalized IMDb rating and log-votes into a [0,1] prior."""
+        n = len(self.df)
+
+        def _minmax(series):
+            s = pd.to_numeric(series, errors='coerce')
+            if s.notna().sum() == 0:
+                return np.zeros(n)
+            s = s.fillna(s.median())
+            lo, hi = s.min(), s.max()
+            if hi - lo == 0:
+                return np.zeros(n)
+            return ((s - lo) / (hi - lo)).to_numpy()
+
+        rating_q = _minmax(self.df['rating']) if 'rating' in self.df.columns else np.zeros(n)
+        if 'votes' in self.df.columns:
+            votes_q = _minmax(np.log1p(pd.to_numeric(self.df['votes'], errors='coerce')))
+        else:
+            votes_q = np.zeros(n)
+        return 0.5 * rating_q + 0.5 * votes_q
 
     def _find_title(self, title):
         key = re.sub(r'[^a-z0-9]', '', str(title).lower().strip())
@@ -214,19 +293,62 @@ class PersonalRecommender:
         self.liked.append(idx)
         return idx, True
 
+    def _popular(self, k):
+        """Fallback when there are no likes: most popular / best-rated."""
+        for col in ('votes', 'rating'):
+            if col in self.df.columns and self.df[col].notna().any():
+                top = self.df.sort_values(col, ascending=False).head(k)
+                return top[['title']].assign(score=0.0)
+        return self.df[['title']].head(k).assign(score=0.0)
+
+    def _rank(self, profile, exclude_ids, k):
+        """Score every movie against ``profile`` and return the top-k.
+
+        When features are normalized, the content score is true cosine
+        similarity in [0,1]; a convex blend with the quality prior nudges
+        ranking toward better-regarded films while keeping the result in [0,1].
+        Keeps the original DataFrame index so callers can map rows back to
+        their real movie ids (do NOT reset_index here).
+        """
+        profile = np.asarray(profile, dtype=float).reshape(1, -1)
+        if self.normalize_features:
+            profile = normalize(profile, norm='l2', axis=1)
+        content = linear_kernel(profile, self.matrix).flatten()
+
+        beta = self.quality_weight
+        final = (1 - beta) * content + beta * self.quality if beta else content
+
+        for i in exclude_ids:
+            if 0 <= i < len(final):
+                final[i] = -1.0
+        top_idx = final.argsort()[::-1][:k]
+        return self.df.iloc[top_idx][['title']].assign(score=final[top_idx])
+
     def recommend(self, k=10):
         if len(self.liked) == 0:
-            if 'vote_count' in self.df.columns:
-                top = self.df.sort_values('vote_count', ascending=False).head(k)
-                return top[['title']]
-            return self.df[['title']].head(k)
-        sims = linear_kernel(self.profile, self.matrix).flatten()
-        for idx in self.liked:
-            sims[idx] = -1
-        top_idx = sims.argsort()[::-1][:k]
-        # Keep the original DataFrame index so callers can map rows back to
-        # their real movie ids (do NOT reset_index here).
-        return self.df.iloc[top_idx][['title']].assign(score=sims[top_idx])
+            return self._popular(k)
+        return self._rank(self.profile, self.liked, k)
+
+    def recommend_for(self, liked_ids, k=10):
+        """Stateless recommendation against the pre-built matrix.
+
+        Builds the taste profile on the fly from ``liked_ids`` (movie ids,
+        which are row positions in the matrix) without mutating any instance
+        state, so a single shared recommender can serve concurrent requests.
+        """
+        n_items = self.matrix.shape[0]
+        # validate + dedupe while preserving order
+        liked = list(dict.fromkeys(
+            i for i in liked_ids
+            if isinstance(i, (int, np.integer)) and 0 <= i < n_items
+        ))
+
+        if not liked:
+            return self._popular(k)
+
+        # profile = mean of the liked items' feature vectors
+        profile = np.asarray(self.matrix[liked].mean(axis=0))
+        return self._rank(profile, liked, k)
 
 if __name__ == '__main__':
     df = load_movie_df()

@@ -10,6 +10,7 @@ import {
   Star,
   AlertCircle,
   Heart,
+  Clock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -169,26 +170,29 @@ function Index() {
         <div className="absolute top-1/3 right-0 h-[400px] w-[400px] rounded-full bg-fuchsia-500/10 blur-[120px]" />
       </div>
 
-      <header className="border-b border-border/60 backdrop-blur-xl bg-background/60 sticky top-0 z-20">
+      <header className="border-b border-border/60 backdrop-blur-xl bg-background/70 sticky top-0 z-20">
         <div className="mx-auto max-w-[1400px] px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[image:var(--gradient-primary)] shadow-[var(--shadow-glow)]">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[image:var(--gradient-primary)] shadow-[var(--shadow-glow)]">
               <Film className="h-5 w-5 text-primary-foreground" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg font-bold tracking-tight truncate">CineMatch</h1>
+              <h1 className="font-heading text-xl font-extrabold tracking-tight truncate bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+                CineMatch
+              </h1>
               <p className="text-xs text-muted-foreground truncate">
-                ML-powered movie recommendations
+                Find your next favorite film
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="hidden sm:inline-flex">
+            <Badge variant="secondary" className="hidden sm:inline-flex gap-1.5">
+              <Sparkles className="h-3 w-3 text-primary" />
               {selected.length} selected
             </Badge>
-            <Badge variant="secondary" className="hidden sm:inline-flex gap-1">
+            <Badge variant="secondary" className="hidden sm:inline-flex gap-1.5">
               <Heart className="h-3 w-3 text-rose-400 fill-rose-400" />
-              {Object.keys(fav.favorites).length}
+              {Object.keys(fav.favorites).length} saved
             </Badge>
           </div>
         </div>
@@ -471,26 +475,36 @@ function MovieCard({
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left rounded-2xl border p-3 transition-all duration-200",
-        "hover:-translate-y-0.5 hover:border-primary/50",
+        "group w-full text-left rounded-2xl border p-3 transition-all duration-200",
+        "hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]",
         selected
-          ? "border-primary bg-primary/10 shadow-[var(--shadow-glow)]"
-          : "border-border/60 bg-secondary/30 hover:bg-secondary/60",
+          ? "border-primary/70 bg-primary/10 shadow-[var(--shadow-glow)]"
+          : "border-border/60 bg-secondary/30 hover:bg-secondary/60 hover:border-primary/40",
       )}
     >
       <div className="flex items-start gap-3">
-        <MoviePoster title={movie.title} year={movie.year} size="sm" />
+        <MoviePoster title={movie.title} year={movie.year} posterUrl={movie.poster_url} size="sm" />
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <h3 className="font-semibold break-words">{movie.title}</h3>
-            {movie.year && (
-              <span className="text-xs text-muted-foreground shrink-0">
-                {movie.year}
+          <h3 className="font-semibold leading-snug break-words line-clamp-1">
+            {movie.title}
+          </h3>
+          <div className="mt-1 flex items-center gap-2.5 text-[11px] text-muted-foreground">
+            {movie.rating != null && (
+              <span className="inline-flex items-center gap-1 font-medium text-amber-400">
+                <Star className="h-3 w-3 fill-amber-400" />
+                {movie.rating.toFixed(1)}
               </span>
             )}
+            {movie.runtime != null && (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {movie.runtime}m
+              </span>
+            )}
+            {movie.year && <span>{movie.year}</span>}
           </div>
           {movie.short && (
-            <p className="mt-1 text-xs text-muted-foreground break-words">
+            <p className="mt-1.5 text-xs text-muted-foreground/90 line-clamp-2 break-words">
               {movie.short}
             </p>
           )}
@@ -501,8 +515,8 @@ function MovieCard({
             className={cn(
               "grid h-5 w-5 place-items-center rounded-full border transition-all",
               selected
-                ? "bg-primary border-primary text-primary-foreground"
-                : "border-border bg-background/40",
+                ? "bg-primary border-primary text-primary-foreground scale-110"
+                : "border-border bg-background/40 group-hover:border-primary/50",
             )}
           >
             {selected && <span className="text-[10px] leading-none">✓</span>}
@@ -532,7 +546,7 @@ function RecCard({
     >
       <div className="flex items-start gap-3">
         <div className="relative">
-          <MoviePoster title={rec.title} year={rec.year} size="md" />
+          <MoviePoster title={rec.title} year={rec.year} posterUrl={rec.poster_url} size="md" />
           <div className="absolute -top-1.5 -left-1.5 grid h-6 w-6 place-items-center rounded-full bg-[image:var(--gradient-primary)] text-[11px] font-bold text-primary-foreground shadow-[var(--shadow-glow)]">
             {rank}
           </div>
@@ -547,8 +561,9 @@ function RecCard({
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <div className="text-right">
-                <div className="text-sm font-bold text-primary tabular-nums">
-                  {rec.score.toFixed(2)}
+                <div className="text-base font-extrabold text-primary tabular-nums leading-none">
+                  {pct}
+                  <span className="text-[10px] font-semibold">%</span>
                 </div>
                 <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
                   match

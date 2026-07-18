@@ -10,6 +10,7 @@ export interface Movie {
   runtime?: number | null;
   votes?: number | null;
   director?: string | null;
+  poster_url?: string | null;
 }
 
 export interface Recommendation extends Movie {

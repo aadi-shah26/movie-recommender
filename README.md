@@ -16,3 +16,6 @@ npm run dev
 
 cd /Users/aadishah/movie-recommender/frontend
 npm run dev
+
+If you edit the CSV in `data/` (for example to add titles), restart the backend
+so it reloads the movie catalog.
