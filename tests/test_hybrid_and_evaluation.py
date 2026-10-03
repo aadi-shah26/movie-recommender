@@ -3,8 +3,10 @@ import pytest
 from scipy.sparse import random as sparse_random
 
 from recommender.collaborative import EASE
-from recommender.evaluation import EvalUser, evaluate, split_users
+from recommender.content import likes_matrix
+from recommender.evaluation import EvalSet, evaluate, split_users
 from recommender.hybrid import HybridRecommender
+from recommender.model import TrainedModel
 
 
 @pytest.fixture(scope="module")
@@ -28,35 +30,37 @@ def test_hybrid_recommendations(content, collab):
     assert len(hybrid.recommend_for([], k=4)) == 4
 
 
-def test_save_load_roundtrip(tmp_path, content, collab):
-    years = np.arange(content.n_items)
-    hybrid = HybridRecommender(content, collab, alpha=0.7, beta=0.1, years=years)
-    hybrid.save(tmp_path / "m.npz", tmp_path / "m.json", extra={"note": "test"})
-    loaded = HybridRecommender.load(content, tmp_path / "m.npz", tmp_path / "m.json")
-    assert (loaded.alpha, loaded.beta, loaded.metadata["note"]) == (0.7, 0.1, "test")
-    assert np.allclose(loaded.scores([3, 4]), hybrid.scores([3, 4]))
-    assert loaded.years.tolist() == years.tolist()
-
-
 def test_catalog_size_mismatch_is_rejected(content):
     small = EASE().fit(np.eye(3))
     with pytest.raises(ValueError, match="retrain"):
         HybridRecommender(content, small)
+    with pytest.raises(ValueError, match="retrain"):
+        TrainedModel(content, small, {"alpha": 0.9, "beta": 0.0})
 
 
 def test_evaluate_metrics():
-    users = [EvalUser(fold_in=np.array([0]), held_out=np.array([1, 2]))]
-    perfect = evaluate(lambda liked: np.array([9.0, 8, 7, 0, 0]), users, n_items=5, k=2)
+    users = EvalSet(np.array([0]), likes_matrix([[0]], 5), likes_matrix([[1, 2]], 5))
+    perfect = evaluate(lambda F, b: np.array([9.0, 8, 7, 0, 0]), users, k=2)
     assert perfect["recall@2"] == 1.0 and perfect["ndcg@2"] == pytest.approx(1.0)
-    miss = evaluate(lambda liked: np.array([0, 0, 0, 9.0, 8]), users, n_items=5, k=2)
+    miss = evaluate(lambda F, b: np.array([0, 0, 0, 9.0, 8]), users, k=2)
     assert miss["recall@2"] == 0.0 and miss["coverage"] == 0.4
 
 
-def test_split_users_is_disjoint_and_hides_likes(collab):
+def test_split_users_is_disjoint_and_hides_likes():
     X = sparse_random(200, 50, density=0.2, format="csr", random_state=1)
     X.data[:] = 1
     split = split_users(X, min_likes=5, seed=0)
-    groups = [set(split.train_rows), set(split.val_rows), set(split.test_rows)]
+    groups = [set(split.train_rows), set(split.val.rows), set(split.test.rows)]
     assert not (groups[0] & groups[1] or groups[0] & groups[2] or groups[1] & groups[2])
-    for user in split.test:
-        assert len(user.held_out) >= 1 and not set(user.fold_in) & set(user.held_out)
+    for users in (split.val, split.test):
+        assert (users.fold_in.multiply(users.held_out)).nnz == 0
+        assert (np.asarray(users.held_out.sum(axis=1)) >= 1).all()
+        assert ((users.fold_in + users.held_out) != X[users.rows]).nnz == 0
+
+
+def test_batch_scores_match_single_user(content, collab):
+    hybrid = HybridRecommender(content, collab, alpha=0.6, beta=0.1)
+    liked = [[0, 5, 9], [3], [100, 200]]
+    batch = hybrid.scores_batch(likes_matrix(liked, content.n_items))
+    for row, ids in zip(batch, liked, strict=True):
+        assert np.allclose(row, hybrid.scores(ids), atol=1e-6)

@@ -1,8 +1,9 @@
 """Movie Recommender API.
 
-Serves the trained hybrid model (models/hybrid.npz, from `python -m scripts.train`).
-If no trained model is present it falls back to the content-only recommender,
-so the API still works on a fresh clone.
+Serves the trained two-stage model (models/, from `python -m scripts.train`):
+EASE + content candidates reranked by LightGBM. If no trained model is present
+it falls back to the content-only recommender, so the API still works on a
+fresh clone.
 
 Run from the project root:
     uvicorn backend.main:app --reload --port 8000
@@ -22,8 +23,8 @@ from pydantic import BaseModel, Field
 
 from recommender.catalog import load_movie_df
 from recommender.content import ContentRecommender
-from recommender.hybrid import HybridRecommender
-from recommender.paths import HYBRID_ARTIFACT, POSTERS_JSON
+from recommender.model import TrainedModel
+from recommender.paths import MODELS_DIR, POSTERS_JSON
 
 log = logging.getLogger("uvicorn.error")
 
@@ -61,7 +62,10 @@ class ModelInfo(BaseModel):
     version: str | None = None
     params: dict = {}
     trained_at: str | None = None
+    dataset: str | None = None
     test_metrics: dict | None = None
+    cold_start_metrics: dict | None = None
+    feature_importance: dict | None = None
 
 
 class Health(BaseModel):
@@ -74,22 +78,19 @@ class Health(BaseModel):
 # ---- model + catalog, loaded once at startup --------------------------------
 
 DF = load_movie_df()
-CONTENT = ContentRecommender(DF)
 
 try:
-    MODEL = HybridRecommender.load(CONTENT)
+    MODEL = TrainedModel.load(DF)
     MODEL_INFO = ModelInfo(
-        model=MODEL.metadata["model"],
-        version=MODEL.metadata["version"],
-        params={k: MODEL.metadata[k] for k in ("l2", "alpha", "beta")},
-        trained_at=MODEL.metadata.get("trained_at"),
-        test_metrics=MODEL.metadata.get("test_metrics"),
+        model=MODEL.name,
+        **{k: MODEL.metadata.get(k) for k in (
+            "version", "params", "trained_at", "dataset", "test_metrics", "cold_start_metrics", "feature_importance")},
     )
 except (FileNotFoundError, KeyError, ValueError) as e:
-    log.warning("No usable trained model at %s (%s); serving content-only. "
-                "Run `python -m scripts.train` to train one.", HYBRID_ARTIFACT, e)
-    MODEL = CONTENT
-    MODEL_INFO = ModelInfo(model="content", params={"quality": CONTENT.quality_weight})
+    log.warning("No usable trained model in %s (%s); serving content-only. "
+                "Run `python -m scripts.train` to train one.", MODELS_DIR, e)
+    MODEL = ContentRecommender(DF)
+    MODEL_INFO = ModelInfo(model="content", params={"quality": MODEL.quality_weight})
 
 # Optional poster map produced by scripts/fetch_posters.py ({title: poster_url}).
 try:

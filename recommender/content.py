@@ -4,15 +4,17 @@ import re
 
 import numpy as np
 import pandas as pd
-from scipy.sparse import csr_matrix, hstack
+from scipy.sparse import csr_matrix, diags, hstack
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 from sklearn.preprocessing import normalize
 
 from .catalog import load_movie_df, normalize_key
+from .paths import PLOT_EMBEDDINGS
 
 DEFAULT_WEIGHTS = {
     "text": 1.0, "genre": 6.0, "director": 3.0, "actors": 4.0, "year": 2.0,
+    "embedding": 0.0,  # sentence-embedding plot block (scripts/embed_plots.py)
     # blend weight for the rating/popularity prior applied at ranking time
     "quality": 0.15,
 }
@@ -41,6 +43,16 @@ def _minmax(values, n):
     return ((s - lo) / (hi - lo)).to_numpy()
 
 
+def likes_matrix(liked_lists, n_items):
+    """Sparse (len(liked_lists) x n_items) binary matrix from lists of item ids."""
+    rows = np.repeat(np.arange(len(liked_lists)), [len(x) for x in liked_lists])
+    cols = np.concatenate([np.asarray(x, dtype=np.int64) for x in liked_lists]) if len(rows) else []
+    F = csr_matrix((np.ones(len(rows), dtype=np.float32), (rows, cols)), shape=(len(liked_lists), n_items))
+    F.sum_duplicates()
+    F.data[:] = 1.0
+    return F
+
+
 def top_k(scores, exclude_ids, k):
     """Indices of the k highest scores, skipping ``exclude_ids``."""
     scores = np.asarray(scores, dtype=float).copy()
@@ -54,10 +66,14 @@ def top_k(scores, exclude_ids, k):
 
 
 class ContentRecommender:
-    def __init__(self, df=None, weights=None, normalize_features=True):
+    def __init__(self, df=None, weights=None, normalize_features=True, embeddings="auto"):
+        """embeddings: (n_items x dim) plot embeddings, None to disable, or "auto"
+        to load data/plot_embeddings.npy when present. Only used when the
+        "embedding" weight is > 0."""
         self.df = df if df is not None else load_movie_df()
         self.normalize_features = normalize_features
         w = {**DEFAULT_WEIGHTS, **(weights or {})}
+        self.weights = w
         self.quality_weight = float(w["quality"])
         n = len(self.df)
 
@@ -91,17 +107,33 @@ class ContentRecommender:
 
         # Per-block L2 normalization so weights mean relative importance rather
         # than being swamped by token counts, then weight.
-        blocks = [
-            (text_mat, w["text"]),
-            (genre_mat, w["genre"]),
-            (director_mat, w["director"]),
-            (actor_mat, w["actors"]),
-            (year_mat, w["year"]),
-        ]
+        if isinstance(embeddings, str) and embeddings == "auto":
+            embeddings = np.load(PLOT_EMBEDDINGS) if PLOT_EMBEDDINGS.exists() else None
+        if embeddings is not None and w["embedding"] > 0:
+            if len(embeddings) != n:
+                raise ValueError(f"{len(embeddings)} embeddings for {n} movies; rerun scripts/embed_plots.py")
+            # Dense block; its cosine similarities can be slightly negative, which
+            # is fine for ranking.
+            emb_mat = csr_matrix(np.asarray(embeddings, dtype=np.float64))
+        else:
+            emb_mat = csr_matrix((n, 0))
+
+        blocks = {
+            "embedding": (emb_mat, w["embedding"]),
+            "text": (text_mat, w["text"]),
+            "genre": (genre_mat, w["genre"]),
+            "director": (director_mat, w["director"]),
+            "actors": (actor_mat, w["actors"]),
+            "year": (year_mat, w["year"]),
+        }
+        # Unweighted, normalized blocks are kept for per-block similarity features.
+        self.blocks = {}
         scaled_blocks = []
-        for block, weight in blocks:
+        for name, (block, weight) in blocks.items():
             if block.shape[1] and self.normalize_features:
                 block = normalize(block, norm="l2", axis=1)
+            if block.shape[1]:
+                self.blocks[name] = csr_matrix(block)
             scaled_blocks.append(block.multiply(weight) if block.shape[1] else block)
 
         # L2-normalize rows so linear_kernel == cosine similarity.
@@ -134,12 +166,25 @@ class ContentRecommender:
         matches = difflib.get_close_matches(key, list(self.title_to_idx), n=1, cutoff=0.5)
         return self.title_to_idx[matches[0]] if matches else None
 
+    def item_similarity(self):
+        """Dense (items x items) cosine similarity between movies."""
+        return np.asarray((self.matrix @ self.matrix.T).todense(), dtype=np.float32)
+
     def similarity(self, liked):
         """Cosine similarity of every item to the mean profile of ``liked``."""
-        profile = np.asarray(self.matrix[liked].mean(axis=0)).reshape(1, -1)
+        return self.similarity_batch(likes_matrix([liked], self.n_items))[0]
+
+    def similarity_batch(self, F):
+        """Row u: similarity of every item to the mean profile of user u's likes.
+
+        F is a sparse (users x items) like-matrix; the profile is the mean of
+        the liked items' feature vectors, computed for all users in one product.
+        """
+        counts = np.asarray(F.sum(axis=1)).ravel()
+        profiles = diags(1.0 / np.maximum(counts, 1)) @ F @ self.matrix
         if self.normalize_features:
-            profile = normalize(profile, norm="l2", axis=1)
-        return linear_kernel(profile, self.matrix).ravel()
+            profiles = normalize(profiles, norm="l2", axis=1)
+        return np.asarray(linear_kernel(profiles, self.matrix), dtype=np.float32)
 
     def blend_quality(self, scores):
         """Convex blend with the quality prior; keeps scores in [0,1]."""

@@ -1,19 +1,20 @@
-# Backend API image. The model is trained at build time (downloads MovieLens,
-# ~1 MB), so the image ships with a ready-to-serve artifact.
+# Backend API image. Serves the committed trained model in models/ (trained
+# locally on MovieLens-32M with `python -m scripts.train`).
 FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 WORKDIR /app
 
+# LightGBM needs the OpenMP runtime.
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY recommender/ recommender/
-COPY scripts/ scripts/
 COPY backend/ backend/
-COPY ["data/IMDb top 1000 movies.csv", "data/posters.json", "data/"]
-
-RUN python -m scripts.train && rm -rf data/movielens
+COPY models/ models/
+COPY ["data/IMDb top 1000 movies.csv", "data/posters.json", "data/plot_embeddings.npy", "data/"]
 
 RUN useradd --create-home app && chown -R app /app
 USER app

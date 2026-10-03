@@ -1,0 +1,112 @@
+{
+  "model": "two-stage-ease-lightgbm",
+  "version": "20261003231555",
+  "trained_at": "2026-10-03T23:15:55+00:00",
+  "n_items": 1000,
+  "params": {
+    "l2": 1000.0,
+    "alpha": 0.9,
+    "beta": 0.0,
+    "impute_k": 25,
+    "impute_power": 4.0,
+    "n_collab": 100,
+    "n_content": 20,
+    "dropout_users": 0.3333333333333333,
+    "dropout_frac": 0.1,
+    "candidate_recall": 0.8029681067524724
+  },
+  "content_weights": {
+    "text": 1.0,
+    "genre": 6.0,
+    "director": 3.0,
+    "actors": 4.0,
+    "year": 2.0,
+    "embedding": 12.0,
+    "quality": 0.15
+  },
+  "dataset": "ml-32m",
+  "matched_movies": 973,
+  "users": 199514,
+  "likes": 7888458,
+  "split": {
+    "train": 119514,
+    "ranker": 60000,
+    "test": 20000,
+    "cold_items": 100,
+    "cold_test_users": 10684
+  },
+  "seed": 0,
+  "test_metrics": {
+    "popularity": {
+      "recall@10": 0.19469339285714285,
+      "ndcg@10": 0.17476952540967036,
+      "coverage": 0.055
+    },
+    "content": {
+      "recall@10": 0.13566359126984126,
+      "ndcg@10": 0.13254063622129525,
+      "coverage": 0.492
+    },
+    "collaborative (EASE)": {
+      "recall@10": 0.4382477182539682,
+      "ndcg@10": 0.4008530027665524,
+      "coverage": 0.664
+    },
+    "hybrid": {
+      "recall@10": 0.4379767063492063,
+      "ndcg@10": 0.40077324487941984,
+      "coverage": 0.668
+    },
+    "two-stage (LightGBM)": {
+      "recall@10": 0.44647724206349204,
+      "ndcg@10": 0.41043091478445265,
+      "coverage": 0.764
+    }
+  },
+  "cold_start_metrics": {
+    "IMDb popularity": {
+      "recall@10": 0.4770989701259264,
+      "ndcg@10": 0.31757895115710993
+    },
+    "content": {
+      "recall@10": 0.4085342345474318,
+      "ndcg@10": 0.2973819368278181
+    },
+    "hybrid (imputed collab)": {
+      "recall@10": 0.4728327256898017,
+      "ndcg@10": 0.35054872541589954
+    },
+    "two-stage (LightGBM)": {
+      "recall@10": 0.4570801614043845,
+      "ndcg@10": 0.3935252007270705
+    }
+  },
+  "feature_importance": {
+    "ease_rank": 0.6783535952643318,
+    "ease_rescaled": 0.1361421831876634,
+    "ease_raw": 0.041473965973256095,
+    "item_log_votes": 0.029718529933581556,
+    "user_n_likes": 0.01872881539034797,
+    "year_diff": 0.011065285047797576,
+    "cooc_max": 0.009408558290237118,
+    "ease_max_link": 0.008351560253311952,
+    "item_rating": 0.007866453581598714,
+    "pop_diff": 0.00746948355923541,
+    "cooc_mean": 0.006800697322161741,
+    "sim_max": 0.0047787277294416945,
+    "user_mean_year": 0.004733423001555652,
+    "item_log_pop": 0.0044243225216094835,
+    "sim_genre": 0.004163441517312881,
+    "item_year": 0.0033984371459088265,
+    "user_mean_log_pop": 0.0033448094308655123,
+    "sim_rank": 0.003255875497252617,
+    "sim_profile": 0.002787592035074847,
+    "item_ml_rating": 0.0026844703745049076,
+    "item_metascore": 0.0024404105135901154,
+    "sim_text": 0.002323567670573276,
+    "item_like_rate": 0.002166936100357009,
+    "sim_director": 0.002153112811610739,
+    "sim_actors": 0.001965745846819104,
+    "item_covered": 0.0
+  }
+}

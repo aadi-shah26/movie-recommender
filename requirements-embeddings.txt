@@ -1,0 +1,5 @@
+# Only for regenerating data/plot_embeddings.npy (python -m scripts.embed_plots).
+# Not needed to train or serve: the embeddings file is committed.
+-r requirements.txt
+sentence-transformers==6.1.0
+torch==2.14.1

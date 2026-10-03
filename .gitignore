@@ -16,7 +16,8 @@ venv/
 .env
 .env.*
 
-# Data and model artifacts (reproducible via scripts/)
+# Data (downloaded by scripts/). Trained models in models/ ARE committed:
+# ML-32M training takes minutes and needs the 240 MB dataset, so Docker/CI
+# serve the committed artifact instead of retraining.
 data/.complete/
 data/movielens/
-models/
