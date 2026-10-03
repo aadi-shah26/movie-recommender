@@ -16,8 +16,8 @@ Auth (set ONE of these env vars):
 
 Usage:
   export TMDB_BEARER="eyJhbGci..."     # or TMDB_API_KEY="..."
-  python src/fetch_posters.py
-  python src/fetch_posters.py --refresh   # ignore cache, refetch everything
+  python -m scripts.fetch_posters
+  python -m scripts.fetch_posters --refresh   # ignore cache, refetch everything
 """
 import argparse
 import json
@@ -27,10 +27,9 @@ import sys
 import time
 import urllib.parse
 import urllib.request
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from personal_recommender import load_movie_df
+from recommender.catalog import load_movie_df
+from recommender.paths import POSTERS_JSON
 
 # macOS python.org builds often lack a CA bundle, so urllib's HTTPS verification
 # fails ("CERTIFICATE_VERIFY_FAILED"). Use certifi's bundle when available.
@@ -42,7 +41,7 @@ except Exception:
 
 SEARCH_URL = "https://api.themoviedb.org/3/search/movie"
 IMG_BASE = "https://image.tmdb.org/t/p/w500"
-OUT_PATH = Path("data/posters.json")
+OUT_PATH = POSTERS_JSON
 SAVE_EVERY = 25
 REQUEST_PAUSE = 0.05  # be polite; TMDB allows ~50 req/s
 

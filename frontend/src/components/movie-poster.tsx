@@ -32,7 +32,10 @@ const PALETTES: [string, string][] = [
 ];
 
 function initials(title: string) {
-  const words = title.replace(/[^A-Za-z0-9 ]/g, "").trim().split(/\s+/);
+  const words = title
+    .replace(/[^A-Za-z0-9 ]/g, "")
+    .trim()
+    .split(/\s+/);
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
 }
@@ -53,13 +56,7 @@ const INITIALS_CLASSES = {
 const GRAIN =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E\")";
 
-export function MoviePoster({
-  title,
-  year,
-  posterUrl,
-  size = "sm",
-  className,
-}: MoviePosterProps) {
+export function MoviePoster({ title, year, posterUrl, size = "sm", className }: MoviePosterProps) {
   const h = hash(title);
   const [from, to] = PALETTES[h % PALETTES.length];
   const angle = (h % 6) * 30 + 120;
@@ -73,9 +70,7 @@ export function MoviePoster({
         className,
       )}
       style={
-        posterUrl
-          ? undefined
-          : { backgroundImage: `linear-gradient(${angle}deg, ${from}, ${to})` }
+        posterUrl ? undefined : { backgroundImage: `linear-gradient(${angle}deg, ${from}, ${to})` }
       }
       aria-hidden
     >

@@ -1,0 +1,14 @@
+.git
+.venv
+.vscode
+.github
+.claude
+**/__pycache__
+**/.DS_Store
+.pytest_cache
+.ruff_cache
+frontend
+tests
+data/.complete
+data/movielens
+models

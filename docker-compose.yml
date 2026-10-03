@@ -1,0 +1,21 @@
+# Full stack locally:  docker compose up --build
+#   frontend -> http://localhost:3000   API -> http://localhost:8000/docs
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      CORS_ORIGINS: http://localhost:3000
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # Called from the browser, so this is the host-visible API address.
+        VITE_API_BASE: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy

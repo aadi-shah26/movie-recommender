@@ -80,7 +80,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "CineMatch — Movie Recommendations" },
       { name: "description", content: "AI-powered movie recommendations tailored to your taste." },
       { property: "og:title", content: "CineMatch" },
-      { property: "og:description", content: "AI-powered movie recommendations tailored to your taste." },
+      {
+        property: "og:description",
+        content: "AI-powered movie recommendations tailored to your taste.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

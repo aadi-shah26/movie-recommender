@@ -41,9 +41,7 @@ export function FavoritesPanel({
       .filter((m) => favorites[m.id])
       .map((m) => ({ movie: m, entry: favorites[m.id]! }));
 
-    const filtered = tagFilter
-      ? list.filter((x) => x.entry.tags.includes(tagFilter))
-      : list;
+    const filtered = tagFilter ? list.filter((x) => x.entry.tags.includes(tagFilter)) : list;
 
     return filtered.sort((a, b) => {
       if (sort === "rating") return b.entry.rating - a.entry.rating;
@@ -69,9 +67,7 @@ export function FavoritesPanel({
               <Heart className="h-4 w-4 text-rose-400 fill-rose-400" />
               Favorites
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Saved for later, rated, tagged
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">Saved for later, rated, tagged</p>
           </div>
           {count > 0 && <Badge variant="secondary">{count}</Badge>}
         </div>
@@ -156,14 +152,17 @@ export function FavoritesPanel({
               className="rounded-2xl border border-border/60 bg-secondary/30 hover:bg-secondary/50 p-3 transition-colors animate-in fade-in slide-in-from-right-2"
             >
               <div className="flex gap-3">
-                <MoviePoster title={movie.title} year={movie.year} posterUrl={movie.poster_url} size="md" />
+                <MoviePoster
+                  title={movie.title}
+                  year={movie.year}
+                  posterUrl={movie.poster_url}
+                  size="md"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start gap-2">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-sm font-semibold truncate">{movie.title}</h3>
-                      <p className="text-[11px] text-muted-foreground">
-                        {movie.year ?? ""}
-                      </p>
+                      <p className="text-[11px] text-muted-foreground">{movie.year ?? ""}</p>
                     </div>
                     <button
                       onClick={() => onToggle(movie.id)}
@@ -174,10 +173,7 @@ export function FavoritesPanel({
                     </button>
                   </div>
                   <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <StarRating
-                      value={entry.rating}
-                      onChange={(r) => onSetRating(movie.id, r)}
-                    />
+                    <StarRating value={entry.rating} onChange={(r) => onSetRating(movie.id, r)} />
                     <TagPicker
                       selected={entry.tags}
                       customTags={customTags}
@@ -206,12 +202,7 @@ export function FavoritesPanel({
 
       {count > 0 && (
         <div className="p-4 border-t border-border/60 bg-background/30">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full"
-            onClick={onClearAll}
-          >
+          <Button variant="secondary" size="sm" className="w-full" onClick={onClearAll}>
             <Trash2 className="h-3.5 w-3.5" />
             Clear all favorites
           </Button>

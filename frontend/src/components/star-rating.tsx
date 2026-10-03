@@ -14,10 +14,7 @@ export function StarRating({ value, onChange, size = 16, readOnly }: StarRatingP
   const display = hover || value;
 
   return (
-    <div
-      className="inline-flex items-center gap-0.5"
-      onMouseLeave={() => setHover(0)}
-    >
+    <div className="inline-flex items-center gap-0.5" onMouseLeave={() => setHover(0)}>
       {[1, 2, 3, 4, 5].map((i) => {
         const active = i <= display;
         return (

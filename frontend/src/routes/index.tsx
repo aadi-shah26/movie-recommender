@@ -1,17 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  Film,
-  Search,
-  Sparkles,
-  X,
-  Loader2,
-  Star,
-  AlertCircle,
-  Heart,
-  Clock,
-} from "lucide-react";
+import { Film, Search, Sparkles, X, Loader2, Star, AlertCircle, Heart, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +46,7 @@ function hasGenre(genres: string | null | undefined, selectedGenres: string[]) {
   if (!selectedGenres.length || !genres) return true;
   const genreList = genres.split(",").map((g) => g.trim());
   return selectedGenres.some((selected) =>
-    genreList.some((g) => g.toLowerCase() === selected.toLowerCase())
+    genreList.some((g) => g.toLowerCase() === selected.toLowerCase()),
   );
 }
 
@@ -84,7 +74,12 @@ function Index() {
 
   const fav = useFavorites();
 
-  const { data: movies = [], isLoading, isError, refetch } = useQuery({
+  const {
+    data: movies = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["titles"],
     queryFn: fetchTitles,
     staleTime: Infinity,
@@ -137,7 +132,7 @@ function Index() {
         (certificate === "all" || m.certificate === certificate) &&
         inRuntime(m.runtime, runtime) &&
         (!director.trim() ||
-          (m.director ?? "").toLowerCase().includes(director.trim().toLowerCase()))
+          (m.director ?? "").toLowerCase().includes(director.trim().toLowerCase())),
     );
     return [...list].sort((a, b) => {
       if (sortBy === "rating-desc") return (b.rating ?? 0) - (a.rating ?? 0);
@@ -180,9 +175,7 @@ function Index() {
               <h1 className="font-heading text-xl font-extrabold tracking-tight truncate bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
                 CineMatch
               </h1>
-              <p className="text-xs text-muted-foreground truncate">
-                Find your next favorite film
-              </p>
+              <p className="text-xs text-muted-foreground truncate">Find your next favorite film</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -235,9 +228,7 @@ function Index() {
                   <Sparkles className="h-4 w-4 text-primary" />
                   Your library
                 </h2>
-                <span className="text-xs text-muted-foreground">
-                  {selected.length} selected
-                </span>
+                <span className="text-xs text-muted-foreground">{selected.length} selected</span>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -280,10 +271,7 @@ function Index() {
               <div className="p-3 space-y-2">
                 {isLoading &&
                   Array.from({ length: 6 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-20 rounded-2xl bg-secondary/40 animate-pulse"
-                    />
+                    <div key={i} className="h-20 rounded-2xl bg-secondary/40 animate-pulse" />
                   ))}
 
                 {isError && (
@@ -351,11 +339,7 @@ function Index() {
                   Ranked by similarity to your picks
                 </p>
               </div>
-              {recMutation.data && (
-                <Badge variant="secondary">
-                  {filteredRecs.length}
-                </Badge>
-              )}
+              {recMutation.data && <Badge variant="secondary">{filteredRecs.length}</Badge>}
             </div>
 
             <div className="flex-1 p-4">
@@ -364,10 +348,7 @@ function Index() {
               {recMutation.isPending && (
                 <div className="space-y-3">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-24 rounded-2xl bg-secondary/40 animate-pulse"
-                    />
+                    <div key={i} className="h-24 rounded-2xl bg-secondary/40 animate-pulse" />
                   ))}
                 </div>
               )}
@@ -378,11 +359,7 @@ function Index() {
                   <p className="text-sm">
                     {(recMutation.error as Error)?.message ?? "Something went wrong"}
                   </p>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => recMutation.mutate()}
-                  >
+                  <Button size="sm" variant="secondary" onClick={() => recMutation.mutate()}>
                     Try again
                   </Button>
                 </div>
@@ -431,13 +408,7 @@ function Index() {
   );
 }
 
-function FavButton({
-  active,
-  onClick,
-}: {
-  active: boolean;
-  onClick: () => void;
-}) {
+function FavButton({ active, onClick }: { active: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -485,9 +456,7 @@ function MovieCard({
       <div className="flex items-start gap-3">
         <MoviePoster title={movie.title} year={movie.year} posterUrl={movie.poster_url} size="sm" />
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold leading-snug break-words line-clamp-1">
-            {movie.title}
-          </h3>
+          <h3 className="font-semibold leading-snug break-words line-clamp-1">{movie.title}</h3>
           <div className="mt-1 flex items-center gap-2.5 text-[11px] text-muted-foreground">
             {movie.rating != null && (
               <span className="inline-flex items-center gap-1 font-medium text-amber-400">
@@ -555,9 +524,7 @@ function RecCard({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <h3 className="font-semibold truncate">{rec.title}</h3>
-              {rec.year && (
-                <p className="text-[11px] text-muted-foreground">{rec.year}</p>
-              )}
+              {rec.year && <p className="text-[11px] text-muted-foreground">{rec.year}</p>}
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <div className="text-right">
@@ -573,9 +540,7 @@ function RecCard({
             </div>
           </div>
           {rec.short && (
-            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-              {rec.short}
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{rec.short}</p>
           )}
           <div className="mt-2 h-1.5 w-full rounded-full bg-background/60 overflow-hidden">
             <div

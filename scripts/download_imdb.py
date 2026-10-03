@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""Minimal downloader for the IMDB top-1000 Kaggle dataset.
+"""Download the IMDb top-1000 Kaggle dataset (the movie catalog) into data/.
 
-This script downloads `mayankray/imdb-top-1000-movies-dataset` into ./data
-and prints the first 5 rows of the first CSV found. No token handling.
+The CSV is already committed, so this is only needed to refresh it:
+    python -m scripts.download_imdb --refresh
 """
-from pathlib import Path
 import argparse
-import kagglehub
-import pandas as pd
 import sys
 
+import kagglehub
+import pandas as pd
+
+from recommender.paths import CATALOG_CSV, DATA_DIR
 
 DATASET = 'mayankray/imdb-top-1000-movies-dataset'
-OUT_DIR = Path('data')
+OUT_DIR = DATA_DIR
 
 
 def main():
@@ -23,9 +24,8 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # If CSV exists and refresh not asked for, skip download to avoid overwriting
-    existing = list(OUT_DIR.rglob('*.csv'))
-    if existing and not args.refresh:
-        f = existing[0]
+    if CATALOG_CSV.exists() and not args.refresh:
+        f = CATALOG_CSV
         print('Found existing CSV, skipping download (use --refresh to force):', f)
     else:
         print('Downloading dataset:', DATASET)
@@ -35,12 +35,10 @@ def main():
             print('Download failed:', e)
             sys.exit(1)
 
-        # find first CSV and print head
-        files = list(OUT_DIR.rglob('*.csv'))
-        if not files:
-            print('No CSV files found under', OUT_DIR)
+        if not CATALOG_CSV.exists():
+            print('Expected CSV not found:', CATALOG_CSV)
             sys.exit(1)
-        f = files[0]
+        f = CATALOG_CSV
 
     print('Using CSV:', f)
     try:

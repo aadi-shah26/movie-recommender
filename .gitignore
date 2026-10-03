@@ -1,0 +1,22 @@
+# OS / editor
+.DS_Store
+.vscode/launch.json
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Env / secrets
+.env
+.env.*
+
+# Data and model artifacts (reproducible via scripts/)
+data/.complete/
+data/movielens/
+models/

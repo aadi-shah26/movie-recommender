@@ -1,0 +1,26 @@
+# Render Blueprint: New > Blueprint > pick this repo. Both services build from
+# the Dockerfiles; the API trains its model during the image build.
+# After the first deploy, if Render assigned different URLs than below, update
+# CORS_ORIGINS and VITE_API_BASE to match and redeploy.
+services:
+  - type: web
+    name: movie-recommender-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: CORS_ORIGINS
+        value: https://movie-recommender-web.onrender.com
+
+  - type: web
+    name: movie-recommender-web
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    envVars:
+      # Render passes env vars to the Docker build as build args.
+      - key: VITE_API_BASE
+        value: https://movie-recommender-api.onrender.com

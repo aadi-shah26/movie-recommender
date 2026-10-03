@@ -42,11 +42,7 @@ export function TagPicker({ selected, customTags, onChange, onAddCustomTag }: Ta
           Tags
         </button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-60 p-3"
-        align="end"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <PopoverContent className="w-60 p-3" align="end" onClick={(e) => e.stopPropagation()}>
         <p className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wide">
           Tags
         </p>
@@ -56,10 +52,7 @@ export function TagPicker({ selected, customTags, onChange, onAddCustomTag }: Ta
               key={tag}
               className="flex items-center gap-2 text-sm cursor-pointer hover:bg-secondary/50 rounded px-1.5 py-1"
             >
-              <Checkbox
-                checked={selected.includes(tag)}
-                onCheckedChange={() => toggle(tag)}
-              />
+              <Checkbox checked={selected.includes(tag)} onCheckedChange={() => toggle(tag)} />
               <span className="truncate">{tag}</span>
             </label>
           ))}
