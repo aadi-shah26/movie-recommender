@@ -20,7 +20,7 @@
 
 @theme inline {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-heading: "Sora", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Instrument Serif", ui-serif, Georgia, serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -63,88 +63,45 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-:root {
-  --radius: 0.875rem;
-  --background: oklch(0.16 0.02 270);
-  --foreground: oklch(0.98 0.005 250);
-  --card: oklch(0.21 0.025 270);
-  --card-foreground: oklch(0.98 0.005 250);
-  --popover: oklch(0.21 0.025 270);
-  --popover-foreground: oklch(0.98 0.005 250);
-  --primary: oklch(0.7 0.22 18);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.27 0.03 270);
-  --secondary-foreground: oklch(0.98 0.005 250);
-  --muted: oklch(0.25 0.025 270);
-  --muted-foreground: oklch(0.72 0.02 260);
-  --accent: oklch(0.32 0.05 270);
-  --accent-foreground: oklch(0.98 0.005 250);
-  --destructive: oklch(0.65 0.23 25);
-  --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.3 0.025 270);
-  --input: oklch(0.27 0.03 270);
-  --ring: oklch(0.7 0.22 18);
-  --chart-1: oklch(0.7 0.22 18);
-  --chart-2: oklch(0.7 0.17 165);
-  --chart-3: oklch(0.77 0.19 70);
-  --chart-4: oklch(0.63 0.27 304);
-  --chart-5: oklch(0.65 0.25 16);
-  --sidebar: oklch(0.18 0.02 270);
-  --sidebar-foreground: oklch(0.98 0.005 250);
-  --sidebar-primary: oklch(0.7 0.22 18);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.27 0.03 270);
-  --sidebar-accent-foreground: oklch(0.98 0.005 250);
-  --sidebar-border: oklch(0.3 0.025 270);
-  --sidebar-ring: oklch(0.7 0.22 18);
-
-  --gradient-primary: linear-gradient(135deg, oklch(0.7 0.22 18), oklch(0.65 0.25 340));
-  --shadow-glow: 0 10px 40px -10px oklch(0.7 0.22 18 / 0.45);
-  --shadow-card: 0 8px 30px -12px oklch(0 0 0 / 0.6);
-}
-
 /*
- * Dark theme = the app's primary (and only) mode. It carries the SAME coral->
- * pink brand identity as :root so accents (text-primary, match bars, selected
- * chips) stay on-brand instead of falling back to a generic slate gray.
+ * One theme: warm charcoal "screening room" with off-white paper text and a
+ * single muted brass accent. No gradients or glows; posters carry the color.
  */
+:root,
 .dark {
-  --background: oklch(0.15 0.018 285);
-  --foreground: oklch(0.97 0.006 250);
-  --card: oklch(0.205 0.023 285);
-  --card-foreground: oklch(0.97 0.006 250);
-  --popover: oklch(0.185 0.022 285);
-  --popover-foreground: oklch(0.97 0.006 250);
-  --primary: oklch(0.7 0.22 18);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.265 0.03 285);
-  --secondary-foreground: oklch(0.97 0.006 250);
-  --muted: oklch(0.235 0.025 285);
-  --muted-foreground: oklch(0.71 0.025 275);
-  --accent: oklch(0.32 0.06 340);
-  --accent-foreground: oklch(0.98 0.005 250);
-  --destructive: oklch(0.65 0.23 25);
-  --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.7 0.22 18);
-  --chart-1: oklch(0.7 0.22 18);
-  --chart-2: oklch(0.7 0.17 165);
-  --chart-3: oklch(0.77 0.19 70);
-  --chart-4: oklch(0.63 0.27 304);
-  --chart-5: oklch(0.65 0.25 16);
-  --sidebar: oklch(0.17 0.02 285);
-  --sidebar-foreground: oklch(0.97 0.006 250);
-  --sidebar-primary: oklch(0.7 0.22 18);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.265 0.03 285);
-  --sidebar-accent-foreground: oklch(0.97 0.006 250);
-  --sidebar-border: oklch(1 0 0 / 9%);
-  --sidebar-ring: oklch(0.7 0.22 18);
-
-  --gradient-primary: linear-gradient(135deg, oklch(0.72 0.22 18), oklch(0.66 0.26 340));
-  --shadow-glow: 0 10px 40px -10px oklch(0.7 0.22 18 / 0.5);
-  --shadow-card: 0 8px 30px -12px oklch(0 0 0 / 0.7);
+  --radius: 0.5rem;
+  --background: oklch(0.165 0.005 70);
+  --foreground: oklch(0.94 0.012 85);
+  --card: oklch(0.195 0.006 70);
+  --card-foreground: oklch(0.94 0.012 85);
+  --popover: oklch(0.215 0.007 70);
+  --popover-foreground: oklch(0.94 0.012 85);
+  --primary: oklch(0.8 0.1 78);
+  --primary-foreground: oklch(0.2 0.02 70);
+  --secondary: oklch(0.235 0.007 70);
+  --secondary-foreground: oklch(0.94 0.012 85);
+  --muted: oklch(0.215 0.006 70);
+  --muted-foreground: oklch(0.66 0.012 78);
+  --accent: oklch(0.255 0.008 70);
+  --accent-foreground: oklch(0.94 0.012 85);
+  --destructive: oklch(0.62 0.14 28);
+  --destructive-foreground: oklch(0.97 0.01 85);
+  --border: oklch(1 0.02 85 / 9%);
+  --input: oklch(1 0.02 85 / 12%);
+  --ring: oklch(0.8 0.1 78 / 60%);
+  --chart-1: oklch(0.8 0.1 78);
+  --chart-2: oklch(0.7 0.06 160);
+  --chart-3: oklch(0.7 0.07 30);
+  --chart-4: oklch(0.65 0.05 250);
+  --chart-5: oklch(0.75 0.04 85);
+  --sidebar: oklch(0.18 0.005 70);
+  --sidebar-foreground: oklch(0.94 0.012 85);
+  --sidebar-primary: oklch(0.8 0.1 78);
+  --sidebar-primary-foreground: oklch(0.2 0.02 70);
+  --sidebar-accent: oklch(0.235 0.007 70);
+  --sidebar-accent-foreground: oklch(0.94 0.012 85);
+  --sidebar-border: oklch(1 0.02 85 / 9%);
+  --sidebar-ring: oklch(0.8 0.1 78 / 60%);
 }
 
 @layer base {
@@ -164,11 +121,8 @@
     text-rendering: optimizeLegibility;
   }
 
-  h1,
-  h2,
-  h3 {
-    font-family: var(--font-heading);
-    letter-spacing: -0.02em;
+  ::selection {
+    background: oklch(0.8 0.1 78 / 35%);
   }
 }
 

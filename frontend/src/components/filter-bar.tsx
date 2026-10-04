@@ -1,4 +1,4 @@
-import { Filter, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type SortBy = "title" | "rating-desc" | "votes-desc";
 export type RuntimeBucket = "all" | "short" | "medium" | "long" | "epic";
@@ -24,11 +24,19 @@ interface FilterBarProps {
   hasActive: boolean;
 }
 
-const SELECT_CLS =
-  "h-9 rounded-lg bg-secondary/60 border border-border/60 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
+const FIELD_CLS =
+  "h-8 w-full rounded-md border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring";
 
-const LABEL_CLS = "flex items-center gap-2 text-xs text-muted-foreground";
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+      {label}
+      {children}
+    </label>
+  );
+}
 
+/** Compact filter controls; the parent decides when to show them. */
 export function FilterBar({
   selectedGenres,
   onGenresChange,
@@ -48,28 +56,56 @@ export function FilterBar({
   onReset,
   hasActive,
 }: FilterBarProps) {
-  const toggleGenre = (genre: string) => {
-    if (selectedGenres.includes(genre)) {
-      onGenresChange(selectedGenres.filter((g) => g !== genre));
-    } else {
-      onGenresChange([...selectedGenres, genre]);
-    }
-  };
+  const toggleGenre = (genre: string) =>
+    onGenresChange(
+      selectedGenres.includes(genre)
+        ? selectedGenres.filter((g) => g !== genre)
+        : [...selectedGenres, genre],
+    );
 
   return (
-    <div className="mb-6 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-4 space-y-4">
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Filter className="h-4 w-4" />
-          Filters
+    <div className="space-y-4">
+      {availableGenres.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {availableGenres.map((genre) => {
+            const active = selectedGenres.includes(genre);
+            return (
+              <button
+                key={genre}
+                type="button"
+                onClick={() => toggleGenre(genre)}
+                aria-pressed={active}
+                className={cn(
+                  "rounded-md border px-2 py-0.5 text-[11px] transition-colors",
+                  active
+                    ? "border-primary/60 bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20",
+                )}
+              >
+                {genre}
+              </button>
+            );
+          })}
         </div>
+      )}
 
-        <label className={LABEL_CLS}>
-          Rating
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+        <Field label="Sort by">
+          <select
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value as SortBy)}
+            className={FIELD_CLS}
+          >
+            <option value="title">Title</option>
+            <option value="rating-desc">IMDb rating</option>
+            <option value="votes-desc">Most voted</option>
+          </select>
+        </Field>
+        <Field label="Minimum rating">
           <select
             value={minRating}
             onChange={(e) => onMinRatingChange(e.target.value as MinRating)}
-            className={SELECT_CLS}
+            className={FIELD_CLS}
           >
             <option value="all">Any</option>
             <option value="7.5">7.5+</option>
@@ -77,30 +113,12 @@ export function FilterBar({
             <option value="8.5">8.5+</option>
             <option value="9">9.0+</option>
           </select>
-        </label>
-
-        <label className={LABEL_CLS}>
-          Certificate
-          <select
-            value={certificate}
-            onChange={(e) => onCertificateChange(e.target.value)}
-            className={SELECT_CLS}
-          >
-            <option value="all">All</option>
-            {availableCertificates.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className={LABEL_CLS}>
-          Runtime
+        </Field>
+        <Field label="Runtime">
           <select
             value={runtime}
             onChange={(e) => onRuntimeChange(e.target.value as RuntimeBucket)}
-            className={SELECT_CLS}
+            className={FIELD_CLS}
           >
             <option value="all">Any</option>
             <option value="short">Under 90 min</option>
@@ -108,72 +126,48 @@ export function FilterBar({
             <option value="long">120–150 min</option>
             <option value="epic">Over 150 min</option>
           </select>
-        </label>
-
-        <label className={LABEL_CLS}>
-          Director
-          <input
-            type="text"
-            value={director}
-            onChange={(e) => onDirectorChange(e.target.value)}
-            placeholder="Any director"
-            list="director-options"
-            className={`${SELECT_CLS} w-44`}
-          />
-          <datalist id="director-options">
-            {availableDirectors.map((d) => (
-              <option key={d} value={d} />
-            ))}
-          </datalist>
-        </label>
-
-        <label className={LABEL_CLS}>
-          Sort
+        </Field>
+        <Field label="Certificate">
           <select
-            value={sortBy}
-            onChange={(e) => onSortChange(e.target.value as SortBy)}
-            className={SELECT_CLS}
+            value={certificate}
+            onChange={(e) => onCertificateChange(e.target.value)}
+            className={FIELD_CLS}
           >
-            <option value="title">Title (A–Z)</option>
-            <option value="rating-desc">Rating (high → low)</option>
-            <option value="votes-desc">Most voted</option>
+            <option value="all">Any</option>
+            {availableCertificates.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
           </select>
-        </label>
-
-        {hasActive && (
-          <button
-            onClick={onReset}
-            className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <X className="h-3 w-3" />
-            Reset
-          </button>
-        )}
+        </Field>
+        <div className="col-span-2">
+          <Field label="Director">
+            <input
+              type="text"
+              value={director}
+              onChange={(e) => onDirectorChange(e.target.value)}
+              placeholder="Any director"
+              list="director-options"
+              className={FIELD_CLS}
+            />
+            <datalist id="director-options">
+              {availableDirectors.map((d) => (
+                <option key={d} value={d} />
+              ))}
+            </datalist>
+          </Field>
+        </div>
       </div>
 
-      {availableGenres.length > 0 && (
-        <div className="border-t border-border/60 pt-3">
-          <div className="mb-2 text-xs text-muted-foreground">Genres</div>
-          <div className="flex flex-wrap gap-2">
-            {availableGenres.map((genre) => {
-              const active = selectedGenres.includes(genre);
-              return (
-                <button
-                  key={genre}
-                  onClick={() => toggleGenre(genre)}
-                  className={
-                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors " +
-                    (active
-                      ? "border-primary bg-primary/20 text-primary"
-                      : "border-border/60 bg-secondary/40 text-muted-foreground hover:bg-secondary/70 hover:text-foreground")
-                  }
-                >
-                  {genre}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      {hasActive && (
+        <button
+          type="button"
+          onClick={onReset}
+          className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+        >
+          Reset filters
+        </button>
       )}
     </div>
   );

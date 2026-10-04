@@ -9,7 +9,7 @@ interface StarRatingProps {
   readOnly?: boolean;
 }
 
-export function StarRating({ value, onChange, size = 16, readOnly }: StarRatingProps) {
+export function StarRating({ value, onChange, size = 14, readOnly }: StarRatingProps) {
   const [hover, setHover] = useState(0);
   const display = hover || value;
 
@@ -28,18 +28,14 @@ export function StarRating({ value, onChange, size = 16, readOnly }: StarRatingP
               if (readOnly) return;
               onChange?.(value === i ? 0 : i);
             }}
-            className={cn(
-              "transition-transform",
-              !readOnly && "hover:scale-110 cursor-pointer",
-              readOnly && "cursor-default",
-            )}
-            aria-label={`${i} star${i > 1 ? "s" : ""}`}
+            className={cn("p-0.5", readOnly ? "cursor-default" : "cursor-pointer")}
+            aria-label={`Rate ${i} star${i > 1 ? "s" : ""}`}
           >
             <Star
               size={size}
               className={cn(
                 "transition-colors",
-                active ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40",
+                active ? "fill-primary text-primary" : "text-muted-foreground/35",
               )}
             />
           </button>

@@ -77,12 +77,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CineMatch — Movie Recommendations" },
-      { name: "description", content: "AI-powered movie recommendations tailored to your taste." },
-      { property: "og:title", content: "CineMatch" },
+      { title: "Movie Recommender" },
+      {
+        name: "description",
+        content: "Pick a few films you love and get personalized movie recommendations.",
+      },
+      { property: "og:title", content: "Movie Recommender" },
       {
         property: "og:description",
-        content: "AI-powered movie recommendations tailored to your taste.",
+        content: "Pick a few films you love and get personalized movie recommendations.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -92,7 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap",
       },
       {
         rel: "stylesheet",
@@ -108,7 +111,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <HeadContent />
       </head>
